@@ -7,7 +7,7 @@ class SplatoonData(object):
     __WEAPONS = None
     __SUBS = None
     __ABILITIES = None
-    __RANDOM = SystemRandom()
+    RANDOM = SystemRandom()
 
     def __init__(self):
         raise Exception("SplatoonData is a static class!")
@@ -33,10 +33,52 @@ class SplatoonData(object):
         return SplatoonData.__ABILITIES[ability]
 
     @staticmethod
+    def get_ability_names():
+        abilities = [
+            "Ink Saver Sub",
+            "Ink Saver Main",
+            "Bomb Defense",
+            "Special Charge Up",
+            "Quick Respawn",
+            "Special Saver",
+            "Swim Speed Up",
+            "Special Power Up",
+            "Ink Recovery Up",
+            "Ink Resistance Up",
+            "Quick Super Jump",
+            "Run Speed Up",
+            "Sub Power Up",
+            # "Main Power Up", # TODO
+            "Respawn Punisher",
+            "Ninja Squid"
+        ]
+        
+        return abilities
+
+    @staticmethod
     def get_random_ability():
-        SplatoonData.__load_abilities()
-        random_index = SplatoonData.__RANDOM.randint(0, len(SplatoonData.__ABILITIES) - 1)
-        return list(SplatoonData.__ABILITIES.keys())[random_index]
+        # SplatoonData.__load_abilities()
+        abilities = [
+            "Ink Saver Sub",
+            "Ink Saver Main",
+            "Bomb Defense",
+            "Special Charge Up",
+            "Quick Respawn",
+            "Special Saver",
+            "Swim Speed Up",
+            "Special Power Up",
+            "Ink Recovery Up",
+            "Ink Resistance Up",
+            "Quick Super Jump",
+            "Run Speed Up",
+            "Sub Power Up",
+            # "Main Power Up", # TODO
+            "Respawn Punisher",
+            "Ninja Squid"
+        ]
+
+        random_index = SplatoonData.RANDOM.randint(0, len(abilities) - 1)
+        return abilities[random_index]
 
     @staticmethod
     def __load_specials():
