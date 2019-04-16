@@ -1,7 +1,8 @@
-import json
+import os, json
 from random import SystemRandom
 
 class SplatoonData(object):
+    __DIR = os.path.dirname(os.path.realpath(__file__))
     __LOADED = False
     __SPECIALS = None
     __WEAPONS = None
@@ -37,7 +38,7 @@ class SplatoonData(object):
         abilities = [
             "Ink Saver Sub",
             "Ink Saver Main",
-            "Bomb Defense",
+            # "Bomb Defense", # TODO
             "Special Charge Up",
             "Quick Respawn",
             "Special Saver",
@@ -52,7 +53,7 @@ class SplatoonData(object):
             "Respawn Punisher",
             "Ninja Squid"
         ]
-        
+
         return abilities
 
     @staticmethod
@@ -61,7 +62,7 @@ class SplatoonData(object):
         abilities = [
             "Ink Saver Sub",
             "Ink Saver Main",
-            "Bomb Defense",
+            # "Bomb Defense", # TODO
             "Special Charge Up",
             "Quick Respawn",
             "Special Saver",
@@ -83,7 +84,7 @@ class SplatoonData(object):
     @staticmethod
     def __load_specials():
         if SplatoonData.__SPECIALS is None:
-            with open("specials.json", "r", encoding="utf-8") as specials_json:
+            with open(SplatoonData.__DIR + "/specials.json", "r", encoding="utf-8") as specials_json:
                 specials = json.loads(specials_json.read())
                 SplatoonData.__SPECIALS = {}
                 for i in range(len(specials)):
@@ -92,7 +93,7 @@ class SplatoonData(object):
     @staticmethod
     def __load_weapons():
         if SplatoonData.__WEAPONS is None:
-            with open("weapons.json", "r", encoding="utf-8") as weapons_json:
+            with open(SplatoonData.__DIR + "/weapons.json", "r", encoding="utf-8") as weapons_json:
                 weapons = json.loads(weapons_json.read())
                 SplatoonData.__WEAPONS = {}
                 for i in range(len(weapons)):
@@ -101,7 +102,7 @@ class SplatoonData(object):
     @staticmethod
     def __load_subs():
         if SplatoonData.__SUBS is None:
-            with open("subs.json", "r", encoding="utf-8") as subs_json:
+            with open(SplatoonData.__DIR + "/subs.json", "r", encoding="utf-8") as subs_json:
                 subs = json.loads(subs_json.read())
                 SplatoonData.__SUBS = {}
                 for i in range(len(subs)):
@@ -110,19 +111,8 @@ class SplatoonData(object):
     @staticmethod
     def __load_abilities():
         if SplatoonData.__ABILITIES is None:
-            with open("abilities.json", "r", encoding="utf-8") as abilities_json:
+            with open(SplatoonData.__DIR + "/abilities.json", "r", encoding="utf-8") as abilities_json:
                 abilities = json.loads(abilities_json.read())
                 SplatoonData.__ABILITIES = {}
                 for key in abilities.keys():
                     SplatoonData.__ABILITIES[key] = abilities[key]
-
-
-if __name__ == "__main__":
-    print("Splashdown Damage: " + str(SplatoonData.get_special("Splashdown")["damage"]))
-    print("# Specials: " + str(len(SplatoonData.__SPECIALS)))
-    print("Ink Saver Main: " + str(SplatoonData.get_ability("Ink Saver Main")["High"]))
-    print("# Abilities: " + str(len(SplatoonData.__ABILITIES)))
-
-    random_ability = SplatoonData.get_random_ability()
-    print("Random Ability Name: " + random_ability)
-    print("Random Ability Params: " + str(SplatoonData.__ABILITIES[random_ability]))
