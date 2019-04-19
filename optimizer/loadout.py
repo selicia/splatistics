@@ -220,19 +220,7 @@ class Loadout(object):
             6. Ink Saver Sub provides a single benefit the optimizer evaluates.
             """
             if ability == "Ink Saver Sub":
-                if self.sub["inkSaver"] == "A":
-                    ink_saver_sub_parameters = SplatoonData.get_ability(ability)["A"]
-                if self.sub["inkSaver"] == "B":
-                    ink_saver_sub_parameters = SplatoonData.get_ability(ability)["B"]
-                if self.sub["inkSaver"] == "C":
-                    ink_saver_sub_parameters = SplatoonData.get_ability(ability)["C"]
-                if self.sub["inkSaver"] == "D":
-                    ink_saver_sub_parameters = SplatoonData.get_ability(ability)["D"]
-                if self.sub["inkSaver"] == "E":
-                    ink_saver_sub_parameters = SplatoonData.get_ability(ability)["E"]
-                if self.sub["inkSaver"] == "F":
-                    ink_saver_sub_parameters = SplatoonData.get_ability(ability)["F"]
-                
+                ink_saver_sub_parameters = SplatoonData.get_ability(ability)[self.sub["inkSaver"]]                
                 s = self.__calcS(ink_saver_sub_parameters)
                 reduction = self.__calcRes(ink_saver_sub_parameters, p, s)
                 costPerSub = self.sub["cost"] * reduction
