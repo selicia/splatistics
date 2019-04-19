@@ -5,6 +5,9 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 with open(script_dir + "/../data/weapons.json", "r", encoding="utf-8") as weapons_json:
     weapons = json.loads(weapons_json.read())
 
+with open(script_dir + "/../data/weapon_popularity.json", "r", encoding="utf-8") as weapon_popularity_json:
+    weapon_popularity = json.loads(weapon_popularity_json.read())
+
 conn = sqlite3.connect('splatistics.db')
 c = conn.cursor()
 
@@ -21,7 +24,7 @@ c.execute("CREATE TABLE weapons (" +
     "base_speed REAL," +
     "shooting_speed TEXT," +
     "level INTEGER," +
-    "price," +
+    "price INTEGER," +
     "min_damage REAL," +
     "max_damage REAL," +
     "mpu_max_damage REAL," +
@@ -32,7 +35,8 @@ c.execute("CREATE TABLE weapons (" +
     "sheldon_handling INTEGER," +
     "sheldon_charge_speed INTEGER," +
     "sheldon_mobility INTEGER," +
-    "sheldon_durability INTEGER)")
+    "sheldon_durability INTEGER," +
+    "x_rank_popularity INTEGER)")
 
 for weapon in weapons:
     values = []
@@ -60,5 +64,10 @@ for weapon in weapons:
     values.append(weapon["stats"]["{{ SHELDON_MOBILITY | translate }}"]) if "{{ SHELDON_MOBILITY | translate }}" in weapon["stats"] else values.append(None)
     values.append(weapon["stats"]["{{ SHELDON_DURABILITY | translate }}"]) if "{{ SHELDON_DURABILITY | translate }}" in weapon["stats"] else values.append(None)
 
-    c.execute("INSERT INTO weapons VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", values)
-    conn.commit()
+    if weapon["name"] in weapon_popularity:
+        values.append(100 - weapon_popularity.index(weapon["name"]))
+    else:
+        values.append(0)
+
+    c.execute("INSERT INTO weapons VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", values)
+    conn.commit()    
