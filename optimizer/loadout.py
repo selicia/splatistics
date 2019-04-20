@@ -44,41 +44,26 @@ class Loadout(object):
         if len(self.secondaries) < 9:
             self.secondaries.append(ability)
 
-    def randomize_abilities(self, requested_abilities=None):
-        random_abilities = []
+    def randomize_abilities(self):
+        random_primaries = [] + SplatoonData.REQUIRED_PRIMARIES
+        random_secondaries = [] + SplatoonData.REQUIRED_SECONDARIES
 
-        if requested_abilities:
-            for ability in requested_abilities:
-                random_abilities.append(ability)
+        while len(random_primaries) < 3:
+            while True:
+                ability = SplatoonData.get_random_ability()
+                if ability not in SplatoonData.RESTRICTED_PRIMARIES:
+                    break
+            random_primaries.append(ability)
 
-        while len(random_abilities) < 12:
-            ability = SplatoonData.get_random_ability()
-            if ability == "Respawn Punisher":
-                if ability not in random_abilities and "Ninja Squid" not in random_abilities:
-                    random_abilities.append(ability)
-            elif ability == "Ninja Squid":
-                if ability not in random_abilities and "Respawn Punisher" not in random_abilities:
-                    random_abilities.append(ability)                
-            else:
-                random_abilities.append(ability)
+        while len(random_secondaries) < 9:
+            while True:
+                ability = SplatoonData.get_random_ability()
+                if ability != "Respawn Punisher" and ability != "Ninja Squid" and ability not in SplatoonData.REQUIRED_SECONDARIES:
+                    break
+            random_secondaries.append(ability)
 
-        if "Respawn Punisher" in random_abilities:
-            self.primaries.append("Respawn Punisher")
-            random_abilities.remove("Respawn Punisher")
-
-        if "Ninja Squid" in random_abilities:
-            self.primaries.append("Ninja Squid")
-            random_abilities.remove("Ninja Squid")
-
-        while len(random_abilities) > 0:
-            random_index = SplatoonData.RANDOM.randint(0, len(random_abilities) - 1)
-            ability = random_abilities[random_index]
-
-            if len(self.primaries) < 3:
-                self.primaries.append(ability)
-            else:
-                self.secondaries.append(ability)
-            random_abilities.remove(random_abilities[random_index])
+        self.primaries = random_primaries
+        self.secondaries = random_secondaries
 
     def get_fitness(self):
         for ability in SplatoonData.get_ability_names():
@@ -86,6 +71,8 @@ class Loadout(object):
             secondary_ability_points = len([x for x in self.secondaries if x == ability]) * 3
             ability_points = primary_ability_points + secondary_ability_points
             p = self.__calcP(ability_points)
+            score = 0
+            num_params = 0
 
             """
             1. Swim Speed Up provides a single benefit the optimizer evaluates.
@@ -110,8 +97,13 @@ class Loadout(object):
                 if "Ninja Squid" in self.primaries:
                     swim_speed *= 0.9
 
-                delta = abs((swim_speed / swim_speed_parameters[2] - 1) * 100)
-                self.fitness_score += delta
+                score += abs((swim_speed / swim_speed_parameters[2] - 1) * 100)
+                num_params += 1
+
+                if num_params > 1:
+                    self.fitness_score += (score / num_params) * (1 + (.1 * (num_params - 1)))
+                else:
+                    self.fitness_score += score
 
             """
             2. Run Speed Up provides the following benefits the optimizer evaluates:
@@ -130,8 +122,8 @@ class Loadout(object):
 
                 s = self.__calcS(run_speed_parameters)
                 run_speed = self.__calcRes(run_speed_parameters, p, s)
-                delta = abs((run_speed / run_speed_parameters[2] - 1) * 100)
-                self.fitness_score += delta
+                score += abs((run_speed / run_speed_parameters[2] - 1) * 100)
+                num_params += 1
 
                 # ii. Run Speed while firing
                 if self.weapon["class"].lower() == "brush" or self.weapon["class"].lower() == "roller":
@@ -141,13 +133,20 @@ class Loadout(object):
                     s = self.__calcS(run_speed_firing_params)
                     run_speed_firing = self.__calcRes(run_speed_firing_params, p, s) * self.weapon["baseSpeed"]
                     delta = abs((run_speed_firing / self.weapon["baseSpeed"] - 1) * 100)
-                    self.fitness_score += delta
+                    score += delta
+                    num_params += 1
 
                 # iii. Run Speed while charging
                 if self.weapon["class"].lower() == "splatling" or self.weapon["class"].lower() == "brella":
                     run_speed_charging = self.__calcRes(run_speed_firing_params, p, s) * self.weapon["chargeSpeed"]
                     delta = abs((run_speed_charging / self.weapon["chargeSpeed"] - 1) * 100)
-                    self.fitness_score += delta
+                    score += delta
+                    num_params += 1
+
+                if num_params > 1:
+                    self.fitness_score += (score / num_params) * (1 + (.1 * (num_params - 1)))
+                else:
+                    self.fitness_score += score
 
             """
             3. Ink Resistance Up provides the following benefits this optimizer evaluates:
@@ -160,22 +159,27 @@ class Loadout(object):
                 ink_resistance_parameters = SplatoonData.get_ability(ability)["Run"]
                 s = self.__calcS(ink_resistance_parameters)
                 run_speed_enemy_ink = self.__calcRes(ink_resistance_parameters, p, s)
-                delta = abs((run_speed_enemy_ink / ink_resistance_parameters[2] - 1) * 100)
-                self.fitness_score += delta
+                score += abs((run_speed_enemy_ink / ink_resistance_parameters[2] - 1) * 100)
+                num_params += 1
 
                 # ii. Reduced Damage per Frame from Enemy Ink
                 ink_resistance_parameters = SplatoonData.get_ability(ability)["Dmg Per Frame"]
                 s = self.__calcS(ink_resistance_parameters)
                 ink_damage_per_frame = self.__calcRes(ink_resistance_parameters, p, s)
-                delta = abs((ink_damage_per_frame / ink_resistance_parameters[2] - 1) * 100)
-                self.fitness_score += delta
+                score += abs((ink_damage_per_frame / ink_resistance_parameters[2] - 1) * 100)
+                num_params += 1
 
                 # iii. Reduced Damage Limit from Enemy Ink
                 ink_resistance_parameters = SplatoonData.get_ability(ability)["Dmg Limit"]
                 s = self.__calcS(ink_resistance_parameters)
                 ink_damage_limit = self.__calcRes(ink_resistance_parameters, p, s)
-                delta = abs((ink_damage_per_frame / ink_resistance_parameters[2] - 1) * 100)
-                self.fitness_score += delta
+                score += abs((ink_damage_per_frame / ink_resistance_parameters[2] - 1) * 100)
+                num_params += 1
+
+                if num_params > 1:
+                    self.fitness_score += (score / num_params) * (1 + (.1 * (num_params - 1)))
+                else:
+                    self.fitness_score += score            
 
             """
             4. Ink Recovery Up provides the following benefits this optimizer evaluates:
@@ -188,16 +192,21 @@ class Loadout(object):
                 s = self.__calcS(ink_recovery_parameters)
                 refill_rate = self.__calcRes(ink_recovery_parameters, p, s)
                 refill_time = refill_rate / 60.0
-                delta = abs((10 / refill_time) * 100)
-                self.fitness_score += delta
+                score += abs((10 / refill_time) * 100)
+                num_params += 1
 
                 # ii. Increased Ink Recovery in Squid Form
                 ink_recovery_parameters = SplatoonData.get_ability(ability)["In Ink"]
                 s = self.__calcS(ink_recovery_parameters)
                 refill_rate = self.__calcRes(ink_recovery_parameters, p, s)
                 refill_time = refill_rate / 60.0
-                delta = abs((3 / refill_time) * 100)
-                self.fitness_score += delta
+                score += abs((3 / refill_time) * 100)
+                num_params += 1
+
+                if num_params > 1:
+                    self.fitness_score += (score / num_params) * (1 + (.1 * (num_params - 1)))
+                else:
+                    self.fitness_score += score                  
             
             """
             5. Ink Saver Main provides a single benefit the optimizer evaluates.
@@ -213,8 +222,13 @@ class Loadout(object):
                 s = self.__calcS(ink_saver_main_parameters)
                 reduction = self.__calcRes(ink_saver_main_parameters, p, s)
                 costPerShot = self.weapon["inkPerShot"] * reduction
-                delta = abs((costPerShot / self.weapon["inkPerShot"] - 1) * 100)
-                self.fitness_score += delta
+                score += abs((costPerShot / self.weapon["inkPerShot"] - 1) * 100)
+                num_params += 1
+
+                if num_params > 1:
+                    self.fitness_score += (score / num_params) * (1 + (.1 * (num_params - 1)))
+                else:
+                    self.fitness_score += score
 
             """
             6. Ink Saver Sub provides a single benefit the optimizer evaluates.
@@ -224,8 +238,13 @@ class Loadout(object):
                 s = self.__calcS(ink_saver_sub_parameters)
                 reduction = self.__calcRes(ink_saver_sub_parameters, p, s)
                 costPerSub = self.sub["cost"] * reduction
-                delta = abs((costPerSub / self.sub["cost"] - 1) * 100)
-                self.fitness_score += delta
+                score += abs((costPerSub / self.sub["cost"] - 1) * 100)
+                num_params += 1
+
+                if num_params > 1:
+                    self.fitness_score += (score / num_params) * (1 + (.1 * (num_params - 1)))
+                else:
+                    self.fitness_score += score
 
             """
             7. Special Charge Up provides a single benefit the optimizer evaluates.
@@ -234,8 +253,13 @@ class Loadout(object):
                 special_charge_speed_parameters = SplatoonData.get_ability(ability)["default"]
                 s = self.__calcS(special_charge_speed_parameters)
                 special_charge_speed = self.__calcRes(special_charge_speed_parameters, p, s)
-                delta = abs((special_charge_speed / special_charge_speed_parameters[2] - 1) * 100)
-                self.fitness_score += delta
+                score += abs((special_charge_speed / special_charge_speed_parameters[2] - 1) * 100)
+                num_params += 1
+
+                if num_params > 1:
+                    self.fitness_score += (score / num_params) * (1 + (.1 * (num_params - 1)))
+                else:
+                    self.fitness_score += score
 
             """
             8. Special Saver provides two different benefits the optimizer evaluates:
@@ -258,8 +282,8 @@ class Loadout(object):
                 if "Respawn Punisher" in self.primaries:
                     special_saved *= 0.775
 
-                delta = abs((special_saved / 100 - 1) * 100)
-                self.fitness_score += delta
+                score += abs((special_saved / 100 - 1) * 100)
+                num_params += 1
 
                 # ii. Special Saved when killed while using it
                 if self.special["name"] == "Splashdown":
@@ -278,8 +302,13 @@ class Loadout(object):
                 if "Respawn Punisher" in self.primaries:
                     special_saved *= 0.775
 
-                delta = abs((special_saved / 100 - 1) * 100)
-                self.fitness_score += delta
+                score += abs((special_saved / 100 - 1) * 100)
+                num_params += 1
+
+                if num_params > 1:
+                    self.fitness_score += (score / num_params) * (1 + (.1 * (num_params - 1)))
+                else:
+                    self.fitness_score += score
 
             """
             9. Special Power Up provides a single benefit the optimizer evaluates.
@@ -319,7 +348,8 @@ class Loadout(object):
                     modifier = self.__calcRes(special_power_up_parameters, p, s)
                     min_bubble_radius = special_power_up_parameters[2] * SplatoonData.get_special("Bubble Blower")["radius"]["Max"]
                     bubble_radius = modifier * SplatoonData.get_special("Bubble Blower")["radius"]["Max"]
-                    delta = abs((bubble_radius / min_bubble_radius - 1) * 100)
+                    score += abs((bubble_radius / min_bubble_radius - 1) * 100)
+                    num_params += 1
 
                 if self.weapon["special"] == "Booyah Bomb":
                     special_power_up_parameters = SplatoonData.get_ability(ability)["Booyah Ball Auto Charge Increase"]
@@ -327,17 +357,22 @@ class Loadout(object):
                     modifier = self.__calcRes(special_power_up_parameters, p, s)
                     charge_time = SplatoonData.get_special("Booyah Bomb")["duration"] - (SplatoonData.get_special("Booyah Bomb")["duration"] * modifier)
                     max_charge_time = SplatoonData.get_special("Booyah Bomb")["duration"] - (SplatoonData.get_special("Booyah Bomb")["duration"] * special_power_up_parameters[2])
-                    delta = abs((charge_time / max_charge_time - 1) * 100)
+                    score += abs((charge_time / max_charge_time - 1) * 100)
+                    num_params += 1
 
                 if self.weapon["special"] == "Ultra Stamp":
-                    pass # TODO
+                    special_power_up_parameters = SplatoonData.get_ability(ability)["Ultra Stamp Duration"]
 
-                if not delta:
+                if score == 0:
                     s = self.__calcS(special_power_up_parameters)
                     result = self.__calcRes(special_power_up_parameters, p, s)
-                    delta = abs((result / special_power_up_parameters[2] - 1) * 100)
+                    score += abs((result / special_power_up_parameters[2] - 1) * 100)
+                    num_params += 1
 
-                self.fitness_score += delta
+                if num_params > 1:
+                    self.fitness_score += (score / num_params) * (1 + (.1 * (num_params - 1)))
+                else:
+                    self.fitness_score += score
 
             """
             10. Sub Power Up provides a single benefit the optimizer evaluates.
@@ -377,17 +412,22 @@ class Loadout(object):
 
                     total_duration = jump_duration + prepare_duration
                     max_duration = jump_parameters[2] + prepare_parameters[2]
-                    delta = abs((total_duration / max_duration - 1) * 100)
+                    score += abs((total_duration / max_duration - 1) * 100)
+                    num_params += 1
 
                 if self.sub["name"] == "Torpedo":
                     sub_power_up_parameters = SplatoonData.get_ability(ability)["Torpedo Distance Up"]
                     
-                if not delta:
+                if score == 0:
                     s = self.__calcS(sub_power_up_parameters)
                     result = self.__calcRes(sub_power_up_parameters, p, s)
-                    delta = abs((result / sub_power_up_parameters[2] - 1) * 100)
+                    score += abs((result / sub_power_up_parameters[2] - 1) * 100)
+                    num_params += 1
                 
-                self.fitness_score += delta
+                if num_params > 1:
+                    self.fitness_score += (score / num_params) * (1 + (.1 * (num_params - 1)))
+                else:
+                    self.fitness_score += score
 
             """
             11. Sub Power Up provides a single benefit the optimizer evaluates.
@@ -405,8 +445,13 @@ class Loadout(object):
 
                 total_duration = jump_duration + prepare_duration
                 max_duration = jump_parameters[2] + prepare_parameters[2]
-                delta = abs((total_duration / max_duration - 1) * 100)
-                self.fitness_score += delta
+                score += abs((total_duration / max_duration - 1) * 100)
+                num_params += 1
+
+                if num_params > 1:
+                    self.fitness_score += (score / num_params) * (1 + (.1 * (num_params - 1)))
+                else:
+                    self.fitness_score += score
 
             """
             12. Quick Respawn provides a single benefit the optimizer evaluates.
@@ -422,8 +467,13 @@ class Loadout(object):
 
                 total_duration = ((death_duration + deathcam_duration) / 60) + 2.5
                 max_duration = ((death_frames_parameters[2] + deathcam_parameters[2]) / 60) + 2.5
-                delta = abs((total_duration / max_duration - 1) * 100)
-                self.fitness_score += delta
+                score += abs((total_duration / max_duration - 1) * 100)
+                num_params += 1
+
+                if num_params > 1:
+                    self.fitness_score += (score / num_params) * (1 + (.1 * (num_params - 1)))
+                else:
+                    self.fitness_score += score
 
             """
             13. Bomb Defense provides the following benefits this optimizer evaluates:

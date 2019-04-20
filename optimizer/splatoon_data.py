@@ -1,17 +1,37 @@
-import os, json
+import os, json, copy
 from random import SystemRandom
 
 class SplatoonData(object):
-    __DIR = os.path.dirname(os.path.realpath(__file__))
     __LOADED = False
     __SPECIALS = None
     __WEAPONS = None
     __SUBS = None
     __ABILITIES = None
+    REQUIRED_PRIMARIES = []
+    REQUIRED_SECONDARIES = []
+    RESTRICTED_PRIMARIES = []
+    RESTRICTED_SECONDARIES = []
     RANDOM = SystemRandom()
+    DIR = os.path.dirname(os.path.realpath(__file__))
 
     def __init__(self):
         raise Exception("SplatoonData is a static class!")
+
+    @staticmethod
+    def list_in_list(list_one, list_two):
+        list_one = copy.deepcopy(list_one)
+        list_two = copy.deepcopy(list_two)
+        
+        count = 0
+        for item in list_one:
+            if item in list_two:
+                list_two.remove(item)
+                count += 1
+        
+        if count == len(list_one):
+            return True 
+        else:
+            return False
 
     @staticmethod
     def get_special(special):
@@ -84,7 +104,7 @@ class SplatoonData(object):
     @staticmethod
     def __load_specials():
         if SplatoonData.__SPECIALS is None:
-            with open(SplatoonData.__DIR + "/specials.json", "r", encoding="utf-8") as specials_json:
+            with open(SplatoonData.DIR + "/specials.json", "r", encoding="utf-8") as specials_json:
                 specials = json.loads(specials_json.read())
                 SplatoonData.__SPECIALS = {}
                 for i in range(len(specials)):
@@ -93,7 +113,7 @@ class SplatoonData(object):
     @staticmethod
     def __load_weapons():
         if SplatoonData.__WEAPONS is None:
-            with open(SplatoonData.__DIR + "/weapons.json", "r", encoding="utf-8") as weapons_json:
+            with open(SplatoonData.DIR + "/weapons.json", "r", encoding="utf-8") as weapons_json:
                 weapons = json.loads(weapons_json.read())
                 SplatoonData.__WEAPONS = {}
                 for i in range(len(weapons)):
@@ -102,7 +122,7 @@ class SplatoonData(object):
     @staticmethod
     def __load_subs():
         if SplatoonData.__SUBS is None:
-            with open(SplatoonData.__DIR + "/subs.json", "r", encoding="utf-8") as subs_json:
+            with open(SplatoonData.DIR + "/subs.json", "r", encoding="utf-8") as subs_json:
                 subs = json.loads(subs_json.read())
                 SplatoonData.__SUBS = {}
                 for i in range(len(subs)):
@@ -111,7 +131,7 @@ class SplatoonData(object):
     @staticmethod
     def __load_abilities():
         if SplatoonData.__ABILITIES is None:
-            with open(SplatoonData.__DIR + "/abilities.json", "r", encoding="utf-8") as abilities_json:
+            with open(SplatoonData.DIR + "/abilities.json", "r", encoding="utf-8") as abilities_json:
                 abilities = json.loads(abilities_json.read())
                 SplatoonData.__ABILITIES = {}
                 for key in abilities.keys():
